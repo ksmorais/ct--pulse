@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "CT Pulse",
+    "slug": "ct-pulse-mobile",
+    "scheme": "ctpulse",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#123B34"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ctpulse.prototipo"
+    },
+    "android": {
+      "package": "com.ctpulse.prototipo",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#123B34"
+      },
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#F07347"
+        }
+      ]
+    ],
+    "extra": {
+      "prototype": true
+    }
+  }
+}
