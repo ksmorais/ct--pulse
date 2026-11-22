@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 ROOT=Path(__file__).resolve().parent
 DB=Path(os.environ.get('CT_DB', ROOT/'data'/'ctpulse.sqlite3'))
 SECURE=os.environ.get('CT_SECURE_COOKIE','0')=='1'
+ALLOW_SIGNUP=os.environ.get('CT_ALLOW_SIGNUP','0')=='1'
 BELTS=['Branca','Amarela','Laranja','Verde','Azul','Marrom','Preta']
 ROLES=['admin','teacher','student']
 class APIError(Exception):
@@ -75,6 +76,17 @@ def teacher_student(c,u,sid):
 def public(u): return {k:u[k] for k in ('id','name','email','role','belt','plan_cents','active')}
 def create_user(c,name,mail,pw,role,plan=0):
     return c.execute('INSERT INTO users(name,email,password_hash,role,plan_cents) VALUES(?,?,?,?,?)',(name,mail,hash_password(password(pw)),role,plan)).lastrowid
+def register_student(c,d):
+    """Cadastro público opcional, exclusivo para alunos (demonstração)."""
+    if set(d) != {'name','email','password'}: fail('Envie apenas nome, e-mail e senha.')
+    name=string(d,'name'); mail=email(d); pw=password(d.get('password'))
+    if c.execute("SELECT count(*) FROM users WHERE role='student'").fetchone()[0] >= 50:
+        fail('Limite de cadastros de demonstração atingido.',429)
+    if c.execute('SELECT 1 FROM users WHERE email=?',(mail,)).fetchone():
+        fail('Este e-mail já está cadastrado.',409)
+    create_user(c,name,mail,pw,'student',0)
+    return {'ok':True,'message':'Conta de aluno criada. Faça login para continuar.'}
+
 def make_payment(c,sid,month,amount,due):
     c.execute('INSERT OR IGNORE INTO payments(student_id,month,amount_cents,due) VALUES(?,?,?,?)',(sid,month,amount,due))
 
@@ -222,7 +234,11 @@ def app(env,start):
             with connection() as c:
                 if method=='POST': c.execute('BEGIN IMMEDIATE')
                 else: c.execute('BEGIN')
-                if path=='/api/login' and method=='POST': payload,headers=login(c,env,d)
+                if path=='/api/public-config' and method=='GET': payload={'signup_enabled':ALLOW_SIGNUP}
+                elif path=='/api/register' and method=='POST':
+                    if not ALLOW_SIGNUP: fail('Cadastro público desativado.',403)
+                    payload=register_student(c,d)
+                elif path=='/api/login' and method=='POST': payload,headers=login(c,env,d)
                 else:
                     u=auth(c,env)
                     if path=='/api/state' and method=='GET': payload=state(c,u)
