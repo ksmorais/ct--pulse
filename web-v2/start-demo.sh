@@ -12,6 +12,9 @@ if [[ "${CT_SECURE_COOKIE:-0}" != "1" ]]; then
   exit 1
 fi
 
+# Cadastro público somente para o ambiente de demonstração.
+export CT_ALLOW_SIGNUP=1
+
 # Caminho propositalmente temporário: nunca use dados reais neste serviço.
 export CT_DB=/tmp/ctpulse-demo.sqlite3
 
