@@ -20,6 +20,18 @@ A demonstração é reiniciada com dados fictícios sempre que o serviço inicia
 9. Entre com um destes e-mails fictícios e **a senha definida em `CT_DEMO_PASSWORD`**: `admin@ctpulse.com`, `prof@ctpulse.com` ou `aluno@ctpulse.com`. As credenciais padrão documentadas para **uso local** não funcionam na versão hospedada.
 10. Use apenas dados fictícios. Cadastros, alterações e pagamentos simulados podem ser vistos/modificados pelas pessoas com acesso, e **desaparecem** quando o serviço reiniciar.
 
+### Autocadastro de alunos na página de login
+
+Na hospedagem demonstrativa, `start-demo.sh` define `CT_ALLOW_SIGNUP=1` automaticamente. A tela de login exibe **Criar conta de aluno**.
+
+- O aluno informa **nome fictício, e-mail de teste e senha própria de 12+ caracteres**, confirma a senha e acessa a conta após fazer login.
+- O novo cadastro recebe somente perfil `student`, sem privilégios administrativos. O plano começa com valor zero e pode ser configurado pelo administrador depois; não gera pagamento automaticamente.
+- E-mails duplicados, senhas insuficientes e campos inesperados são recusados. A demonstração limita a 50 o número total de contas de aluno.
+- Não há verificação de e-mail, consentimento formal, controle completo contra abuso nem banco persistente. **Não use cadastros reais**.
+- Fora do modo demo, `CT_ALLOW_SIGNUP` é desativado por padrão; só ative após uma revisão específica de segurança e privacidade.
+- Teste local: no PowerShell, defina `$env:CT_ALLOW_SIGNUP = '1'` **antes** de iniciar o servidor e use apenas dados fictícios.
+
+
 O script recusa iniciar se a senha não foi definida, se ela tiver menos de 12 caracteres ou se `CT_SECURE_COOKIE` não estiver habilitado. Não use `python server.py demo` com senha padrão para serviço público. Considere desabilitar o auto-deploy depois da demonstração para evitar reinicializações inesperadas, sabendo que o serviço Free poderá entrar em repouso mesmo assim.
 
 ## Modo pago: banco SQLite persistente
