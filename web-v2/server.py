@@ -2,10 +2,12 @@
 import argparse, datetime as dt, getpass, hashlib, hmac, json, mimetypes, os, re, secrets, sqlite3, time
 from pathlib import Path
 from contextlib import contextmanager
+from contextvars import ContextVar
 from http.cookies import SimpleCookie
 from socketserver import ThreadingMixIn
 from wsgiref.simple_server import WSGIServer, make_server
 from zoneinfo import ZoneInfo
+_FIRESTORE_SQL_CONN = ContextVar('ct_pulse_firestore_sql', default=None)
 ROOT=Path(__file__).resolve().parent
 DB=Path(os.environ.get('CT_DB', ROOT/'data'/'ctpulse.sqlite3'))
 SECURE=os.environ.get('CT_SECURE_COOKIE','0')=='1'
@@ -29,6 +31,13 @@ def db_connect():
 
 @contextmanager
 def connection():
+    # Ponte Firestore: consultas SQL rodam apenas na conexão em memória
+    # da requisição, sem criar ou alterar o arquivo SQLite local.
+    active = _FIRESTORE_SQL_CONN.get()
+    if active is not None:
+        with active:
+            yield active
+        return
     c=db_connect()
     try:
         with c: yield c
@@ -250,7 +259,7 @@ def actions(c,u,path,d):
     return {'ok':True},[]
 
 STATUS={200:'OK',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',405:'Method Not Allowed',409:'Conflict',413:'Payload Too Large',429:'Too Many Requests',500:'Internal Server Error'}
-def app(env,start):
+def sqlite_app(env,start):
     path=env.get('PATH_INFO','/'); method=env['REQUEST_METHOD']; headers=[]; status=200
     try:
         if path.startswith('/api/'):
@@ -288,6 +297,12 @@ def app(env,start):
     except Exception:
         import traceback; traceback.print_exc(); status=500; content=b'{"error":"Erro interno do servidor."}'; typ='application/json'
     start(f'{status} {STATUS[status]}',[('Content-Type',typ),('Content-Length',str(len(content))),('Cache-Control','no-store'),('X-Content-Type-Options','nosniff'),('Referrer-Policy','no-referrer'),('X-Frame-Options','DENY'),('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'")]+headers); return [content]
+def app(env,start):
+    if os.environ.get('CT_PERSISTENCE') == 'firestore':
+        from firestore_sql_bridge import firestore_wsgi_app
+        return firestore_wsgi_app(env,start,sqlite_app)
+    return sqlite_app(env,start)
+
 class ThreadServer(ThreadingMixIn,WSGIServer): daemon_threads=True
 if __name__=='__main__':
     p=argparse.ArgumentParser(); sub=p.add_subparsers(dest='command',required=True); sub.add_parser('init'); sub.add_parser('demo'); a=sub.add_parser('admin'); a.add_argument('--email',required=True); a.add_argument('--name',default='Administração'); serve=sub.add_parser('serve'); serve.add_argument('--host',default='127.0.0.1'); serve.add_argument('--port',type=int,default=8000); arg=p.parse_args(); init()
