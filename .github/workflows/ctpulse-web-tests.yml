@@ -1,0 +1,32 @@
+name: CT Pulse V2 - Web tests
+
+on:
+  pull_request:
+    paths:
+      - 'web-v2/**'
+      - '.github/workflows/ctpulse-web-tests.yml'
+  push:
+    branches:
+      - main
+      - feat/ctpulse-render-deploy
+    paths:
+      - 'web-v2/**'
+      - '.github/workflows/ctpulse-web-tests.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-v2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify Python syntax
+        run: python -m py_compile server.py
+      - name: Run API tests
+        run: python -m unittest discover -s tests -v
+      - name: Verify frontend JavaScript syntax
+        run: node --check static/app.js
