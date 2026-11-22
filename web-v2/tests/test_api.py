@@ -69,8 +69,8 @@ class TestCT(unittest.TestCase):
         teacher.login('prof@ctpulse.com','DemoProfessor2026!')
         pupil.login('aluno@ctpulse.com','DemoAluno2026!')
         cid=pupil.req('state')['enrollments'][0]['class_id']
-        initial=admin.req('state')['notices']
-        existing=initial[0]
+        admin.req('notice',{'title':'Comunicado da administração','body':'Informação administrativa','class_id':None})
+        existing=next(n for n in admin.req('state')['notices'] if n['title']=='Comunicado da administração')
         teacher.req('notice/update',{'id':existing['id'],'title':'Tentativa','body':'X'},403)
         pupil.req('notice/delete',{'id':existing['id']},403)
         teacher.req('notice',{'class_id':cid,'title':'Aviso de teste','body':'Lembrete de aula'})
