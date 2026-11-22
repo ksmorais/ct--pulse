@@ -7,6 +7,18 @@ if (( ${#CT_DEMO_PASSWORD} < 12 )); then
   echo "CT_DEMO_PASSWORD deve ter ao menos 12 caracteres." >&2
   exit 1
 fi
+: "${CT_DEMO_ADMIN_PASSWORD:?Configure uma senha própria para a conta de administrador}"
+: "${CT_DEMO_TEACHER_PASSWORD:?Configure uma senha própria para a conta de professor}"
+if (( ${#CT_DEMO_ADMIN_PASSWORD} < 12 || ${#CT_DEMO_TEACHER_PASSWORD} < 12 )); then
+  echo "Senhas do administrador e professor devem ter 12+ caracteres." >&2
+  exit 1
+fi
+if [[ "${CT_DEMO_PASSWORD}" == "${CT_DEMO_ADMIN_PASSWORD}" ||
+      "${CT_DEMO_PASSWORD}" == "${CT_DEMO_TEACHER_PASSWORD}" ||
+      "${CT_DEMO_ADMIN_PASSWORD}" == "${CT_DEMO_TEACHER_PASSWORD}" ]]; then
+  echo "Use três senhas de demonstração diferentes." >&2
+  exit 1
+fi
 if [[ "${CT_SECURE_COOKIE:-0}" != "1" ]]; then
   echo "Defina CT_SECURE_COOKIE=1 para acesso via HTTPS." >&2
   exit 1
