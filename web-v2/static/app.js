@@ -38,9 +38,9 @@ function registerView(){
   };
 }
 const navs={admin:[['home','Início','⌂'],['students','Alunos','♟'],['teachers','Professores','◉'],['classes','Turmas','▦'],['attendance','Chamada','✓'],['finance','Financeiro','R$'],['news','Avisos','✉'],['profile','Perfil','♙']],teacher:[['home','Início','⌂'],['classes','Turmas','▦'],['attendance','Chamada','✓'],['grades','Graduação','★'],['news','Avisos','✉'],['profile','Perfil','♙']],student:[['home','Início','⌂'],['classes','Turmas','▦'],['schedule','Agenda','▤'],['finance','Mensalidade','R$'],['news','Avisos','✉'],['profile','Perfil','♙']]};
-function render(){if(!S)return loginView();const u=S.user,n=navs[u.role],body=views[page]?.()||views.home();app.innerHTML=`<div class="mobile-head"><div class="brand"><span class="logo">CT</span> CT PULSE</div>${btn('Sair','logout')}</div><div class="shell"><aside class="sidebar"><div class="brand"><span class="logo">CT</span> CT PULSE</div><nav class="nav" aria-label="Menu principal">${n.map(([k,t,s])=>`<button data-action="nav" data-id="${k}" class="${k===page?'active':''}" ${k===page?'aria-current="page"':''}><span class="symbol" aria-hidden="true">${s}</span><span>${t}</span></button>`).join('')}</nav><div class="account"><p>${esc(u.name)}</p><small>${roles[u.role]}</small>${btn('Sair','logout')}</div></aside><main class="main"><div class="top"><div><span class="eyebrow">CT Pulse / ${roles[u.role]}</span><h1>${esc(n.find(x=>x[0]===page)?.[1]||'Início')}</h1><small>${date(S.today)} · Dados centralizados</small></div>${btn('Atualizar ↻','refresh')}</div>${body}</main></div>`;if(page==='students'||page==='teachers'){$('search').oninput=e=>{filter.search=e.target.value;$('results').innerHTML=userRows(page==='teachers'?'teacher':'student')}}if(page==='students'&&S.user.role==='admin'&&S.native_students_lab)loadNativeStudents();}
+function render(){if(!S)return loginView();const u=S.user,n=navs[u.role],body=views[page]?.()||views.home();app.innerHTML=`<div class="mobile-head"><div class="brand"><span class="logo">CT</span> CT PULSE</div>${btn('Sair','logout')}</div><div class="shell"><aside class="sidebar"><div class="brand"><span class="logo">CT</span> CT PULSE</div><nav class="nav" aria-label="Menu principal">${n.map(([k,t,s])=>`<button data-action="nav" data-id="${k}" class="${k===page?'active':''}" ${k===page?'aria-current="page"':''}><span class="symbol" aria-hidden="true">${s}</span><span>${t}</span></button>`).join('')}</nav><div class="account"><p>${esc(u.name)}</p><small>${roles[u.role]}</small>${btn('Sair','logout')}</div></aside><main class="main"><div class="top"><div><span class="eyebrow">CT Pulse / ${roles[u.role]}</span><h1>${esc(n.find(x=>x[0]===page)?.[1]||'Início')}</h1><small>${date(S.today)} · Dados centralizados</small></div>${btn('Atualizar ↻','refresh')}</div>${body}</main></div>`;if(page==='students'||page==='teachers'){$('search').oninput=e=>{filter.search=e.target.value;$('results').innerHTML=userRows(page==='teachers'?'teacher':'student')}}if(page==='students'&&S.user.role==='admin'&&S.native_students_lab)loadNativeStudents();if((page==='teachers'||page==='classes')&&S.user.role==='admin'&&S.native_students_lab)loadNativeAcademy();}
 function nextDate(c){for(let i=0;i<8;i++){let d=new Date(S.today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+i);if(c.days.includes(d.getUTCDay()))return d.toISOString().slice(0,10)}return S.today}
-const views={home(){let u=S.user,admin=u.role==='admin',stu=u.role==='student',paid=S.payments.filter(x=>x.status==='paid').reduce((a,b)=>a+b.amount_cents,0),pending=S.payments.filter(x=>x.status==='pending').reduce((a,b)=>a+b.amount_cents,0);return `<section class="hero"><span class="eyebrow">Seu centro de treinamento</span><h2>Olá, ${esc(u.name.split(' ')[0])}!</h2><p>${stu?'Confira sua agenda, mensalidade e evolução.':'Acompanhe os dados e as atividades do CT em um só lugar.'}</p></section><div class="grid">${stu?stat('Turmas inscritas',S.enrollments.length)+stat('Aulas agendadas',S.bookings.filter(b=>b.date>=S.today).length)+stat('Presenças',S.attendance.filter(a=>a.present).length)+stat('Graduação',u.belt):stat('Alunos ativos',S.students.filter(s=>s.active).length)+stat('Turmas',S.classes.length)+ (admin?stat('Recebido (total)',money(paid))+stat('Pendente (total)',money(pending)):stat('Presenças registradas',S.attendance.filter(a=>a.present).length))}</div>${card('Comunicados recentes',S.notices.slice(0,3).map(n=>row(n.title,n.author+' · '+date(n.created_at))).join('')||empty('Nenhum comunicado.'))}${card(stu?'Próximas aulas':'Turmas',S.classes.slice(0,4).map(c=>row(c.name,c.days.map(d=>weekdays[d]).join(' / ')+' · '+c.time+' · '+c.teacher)).join('')||empty('Nenhuma turma cadastrada.'))}`},students(){const lab=S.native_students_lab?'<section class="card native-lab"><div class="top"><div><h2>Laboratório Firestore — alunos fictícios</h2><p class="muted">Cadastros separados da lista principal. Não geram conta de login, mensalidade ou inscrição.</p></div><div class="actions">'+btn('Recarregar','native-reload')+btn('+ Aluno de teste','native-new','',true)+'</div></div><div id="native-students-results" aria-live="polite">Carregando dados de teste…</div></section>':'';return `<div class="top"><input class="search" id="search" aria-label="Buscar aluno" placeholder="Buscar aluno…" value="${esc(filter.search||'')}">${btn('+ Novo aluno','user-new','student',true)}</div><section class="card" id="results">${userRows('student')}</section>${lab}`},teachers(){return `<div class="top"><input class="search" id="search" aria-label="Buscar professor" placeholder="Buscar professor…" value="${esc(filter.search||'')}">${btn('+ Novo professor','user-new','teacher',true)}</div><section class="card" id="results">${userRows('teacher')}</section>`},classes(){let admin=S.user.role==='admin',stu=S.user.role==='student';return `<div class="top"><p class="muted">Grade de horários e disponibilidade.</p>${admin?btn('+ Nova turma','class-edit','',true):''}</div><div class="class-grid">${S.classes.map(c=>{let en=S.enrollments.some(e=>e.class_id===c.id&&e.student_id===S.user.id);return `<section class="card">${pill(c.enrolled_count+' / '+c.capacity+' alunos',c.enrolled_count>=c.capacity?'warn':'')}<h2>${esc(c.name)}</h2><p class="muted">${esc(c.teacher)} · ${c.days.map(d=>weekdays[d]).join(', ')} · ${esc(c.time)}</p><div class="actions">${admin?btn('Editar','class-edit',c.id)+btn('Gerenciar inscrições','enroll-admin',c.id):stu?btn(en?'Cancelar inscrição':'Inscrever-se','enroll',c.id,!en)+(en?btn('Agendar aula','book',c.id,true):''):btn('Ver chamada','class-attendance',c.id,true)}</div></section>`}).join('')||empty('Nenhuma turma disponível.')}</div>`},attendance(){let cid=Number(filter.classId)||S.classes[0]?.id, day=filter.day||S.today;return `<div class="filter"><label>Turma<select id="att-class" data-filter="classId">${S.classes.map(c=>`<option value="${c.id}" ${c.id===cid?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Data<input type="date" id="att-day" value="${esc(day)}" max="${S.today}" data-filter="day"></label></div>${card('Lista de chamada',S.enrollments.filter(e=>e.class_id===cid).map(e=>{let a=S.attendance.find(x=>x.class_id===cid&&x.student_id===e.student_id&&x.date===day);return row(student(e.student_id),a?(a.present?'Presente':'Ausente'):'Ainda não registrado',btn('Presente','presence',`${cid}:${e.student_id}:1`,a?.present===1)+btn('Ausente','presence',`${cid}:${e.student_id}:0`,a?.present===0))}).join('')||empty('Nenhum aluno inscrito nesta turma.'))}`},schedule(){return card('Aulas agendadas',S.bookings.sort((a,b)=>a.date.localeCompare(b.date)).map(b=>row(cls(b.class_id),date(b.date),btn('Cancelar','booking-cancel',b.id))).join('')||empty('Inscreva-se em uma turma e agende um treino.'))+card('Minha frequência',S.attendance.map(a=>row(cls(a.class_id),date(a.date),pill(a.present?'Presente':'Ausente',a.present?'':'warn'))).join('')||empty('Nenhuma frequência registrada.'))},finance(){
+const views={home(){let u=S.user,admin=u.role==='admin',stu=u.role==='student',paid=S.payments.filter(x=>x.status==='paid').reduce((a,b)=>a+b.amount_cents,0),pending=S.payments.filter(x=>x.status==='pending').reduce((a,b)=>a+b.amount_cents,0);return `<section class="hero"><span class="eyebrow">Seu centro de treinamento</span><h2>Olá, ${esc(u.name.split(' ')[0])}!</h2><p>${stu?'Confira sua agenda, mensalidade e evolução.':'Acompanhe os dados e as atividades do CT em um só lugar.'}</p></section><div class="grid">${stu?stat('Turmas inscritas',S.enrollments.length)+stat('Aulas agendadas',S.bookings.filter(b=>b.date>=S.today).length)+stat('Presenças',S.attendance.filter(a=>a.present).length)+stat('Graduação',u.belt):stat('Alunos ativos',S.students.filter(s=>s.active).length)+stat('Turmas',S.classes.length)+ (admin?stat('Recebido (total)',money(paid))+stat('Pendente (total)',money(pending)):stat('Presenças registradas',S.attendance.filter(a=>a.present).length))}</div>${card('Comunicados recentes',S.notices.slice(0,3).map(n=>row(n.title,n.author+' · '+date(n.created_at))).join('')||empty('Nenhum comunicado.'))}${card(stu?'Próximas aulas':'Turmas',S.classes.slice(0,4).map(c=>row(c.name,c.days.map(d=>weekdays[d]).join(' / ')+' · '+c.time+' · '+c.teacher)).join('')||empty('Nenhuma turma cadastrada.'))}`},students(){const lab=S.native_students_lab?'<section class="card native-lab"><div class="top"><div><h2>Laboratório Firestore — alunos fictícios</h2><p class="muted">Cadastros separados da lista principal. Não geram conta de login, mensalidade ou inscrição.</p></div><div class="actions">'+btn('Recarregar','native-reload')+btn('+ Aluno de teste','native-new','',true)+'</div></div><div id="native-students-results" aria-live="polite">Carregando dados de teste…</div></section>':'';return `<div class="top"><input class="search" id="search" aria-label="Buscar aluno" placeholder="Buscar aluno…" value="${esc(filter.search||'')}">${btn('+ Novo aluno','user-new','student',true)}</div><section class="card" id="results">${userRows('student')}</section>${lab}`},teachers(){return `<div class="top"><input class="search" id="search" aria-label="Buscar professor" placeholder="Buscar professor…" value="${esc(filter.search||'')}">${btn('+ Novo professor','user-new','teacher',true)}</div><section class="card" id="results">${userRows('teacher')}</section>${S.user.role==='admin'&&S.native_students_lab?nativeAcademyPanel('teachers'):''}`},classes(){let admin=S.user.role==='admin',stu=S.user.role==='student';return `<div class="top"><p class="muted">Grade de horários e disponibilidade.</p>${admin?btn('+ Nova turma','class-edit','',true):''}</div><div class="class-grid">${S.classes.map(c=>{let en=S.enrollments.some(e=>e.class_id===c.id&&e.student_id===S.user.id);return `<section class="card">${pill(c.enrolled_count+' / '+c.capacity+' alunos',c.enrolled_count>=c.capacity?'warn':'')}<h2>${esc(c.name)}</h2><p class="muted">${esc(c.teacher)} · ${c.days.map(d=>weekdays[d]).join(', ')} · ${esc(c.time)}</p><div class="actions">${admin?btn('Editar','class-edit',c.id)+btn('Gerenciar inscrições','enroll-admin',c.id):stu?btn(en?'Cancelar inscrição':'Inscrever-se','enroll',c.id,!en)+(en?btn('Agendar aula','book',c.id,true):''):btn('Ver chamada','class-attendance',c.id,true)}</div></section>`}).join('')||empty('Nenhuma turma disponível.')}</div>${admin&&S.native_students_lab?nativeAcademyPanel('classes'):''}`},attendance(){let cid=Number(filter.classId)||S.classes[0]?.id, day=filter.day||S.today;return `<div class="filter"><label>Turma<select id="att-class" data-filter="classId">${S.classes.map(c=>`<option value="${c.id}" ${c.id===cid?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Data<input type="date" id="att-day" value="${esc(day)}" max="${S.today}" data-filter="day"></label></div>${card('Lista de chamada',S.enrollments.filter(e=>e.class_id===cid).map(e=>{let a=S.attendance.find(x=>x.class_id===cid&&x.student_id===e.student_id&&x.date===day);return row(student(e.student_id),a?(a.present?'Presente':'Ausente'):'Ainda não registrado',btn('Presente','presence',`${cid}:${e.student_id}:1`,a?.present===1)+btn('Ausente','presence',`${cid}:${e.student_id}:0`,a?.present===0))}).join('')||empty('Nenhum aluno inscrito nesta turma.'))}`},schedule(){return card('Aulas agendadas',S.bookings.sort((a,b)=>a.date.localeCompare(b.date)).map(b=>row(cls(b.class_id),date(b.date),btn('Cancelar','booking-cancel',b.id))).join('')||empty('Inscreva-se em uma turma e agende um treino.'))+card('Minha frequência',S.attendance.map(a=>row(cls(a.class_id),date(a.date),pill(a.present?'Presente':'Ausente',a.present?'':'warn'))).join('')||empty('Nenhuma frequência registrada.'))},finance(){
   const admin=S.user.role==='admin',methods={pix:'Pix',boleto:'Boleto',card:'Cartão'};
   const intro=admin?'Controle de mensalidades e baixas manuais.':'Consulte suas mensalidades e escolha um método de pagamento demonstrativo.';
   const note=S.payments_demo?'<p class="demo-note"><strong>Modo demonstração:</strong> Pix, boleto e cartão são apenas opções simuladas. Nenhuma cobrança, QR Code, boleto ou transação real é emitida.</p>':'';
@@ -83,13 +83,118 @@ async function loadNativeStudents(){
     if(node.isConnected)node.textContent='Não foi possível carregar o laboratório: '+error.message;
   }
 }
+let nativeAcademy={teachers:[],classes:[],enrollments:[]};
+function nativeAcademyPanel(kind){
+  const isTeachers=kind==='teachers';
+  const action=isTeachers?btn('+ Professor de teste','native-teacher-new','',true):btn('+ Turma de teste','native-class-new','',true);
+  return '<section class="card native-lab"><div class="top"><div><h2>Laboratório Firestore — '+(isTeachers?'professores':'turmas e inscrições')+'</h2><p class="muted">Registros fictícios separados do CT Pulse principal. Não criam contas ou cobranças reais.</p></div><div class="actions">'+btn('Recarregar','native-academy-reload')+action+'</div></div><div id="native-academy-results" aria-live="polite">Carregando laboratório…</div></section>';
+}
+function nativeAcademyRows(){
+  if(page==='teachers'){
+    return nativeAcademy.teachers.map(t=>row(t.name,t.email+' · Sem conta de login',pill(t.active?'Ativo':'Inativo',t.active?'':'gray'))).join('')||empty('Nenhum professor de teste cadastrado.');
+  }
+  return nativeAcademy.classes.map(c=>{
+    const teacher=nativeAcademy.teachers.find(t=>t.id===c.teacher_id);
+    const booked=nativeAcademy.enrollments.filter(e=>e.class_id===c.id);
+    return row(c.name,
+      (teacher?.name||'Professor')+' · '+c.days.map(d=>weekdays[d]).join(', ')+' '+c.time+' · '+c.enrolled_count+'/'+c.capacity+' inscritos (teste)',
+      btn('Editar turma','native-class-edit',c.id)+btn('Gerenciar inscrições','native-class-enroll',c.id));
+  }).join('')||empty('Nenhuma turma de teste cadastrada.');
+}
+async function loadNativeAcademy(){
+  const node=$('native-academy-results');
+  if(!node||!S?.native_students_lab)return;
+  node.textContent='Carregando registros nativos…';
+  try{
+    const [academy,studentResult]=await Promise.all([api('native-academy'),api('native-students')]);
+    nativeAcademy=academy;
+    nativeStudents=Array.isArray(studentResult.students)?studentResult.students:[];
+    if(node.isConnected)node.innerHTML=nativeAcademyRows();
+  }catch(error){
+    if(node.isConnected)node.textContent='Não foi possível carregar o laboratório: '+error.message;
+  }
+}
+function nativeDaysInputs(selected=[1,3,5]){
+  return '<p class="label">Dias da semana</p><div class="checkboxes">'+weekdays.map((day,i)=>
+    '<label><input type="checkbox" name="native_days" value="'+i+'" '+(selected.includes(i)?'checked':'')+'>'+esc(day)+'</label>'
+  ).join('')+'</div>';
+}
 function userRows(role){return S[role==='teacher'?'teachers':'students'].filter(s=>(s.name+' '+s.email).toLowerCase().includes((filter.search||'').toLowerCase())).map(s=>row(s.name,role==='student'?s.email+' · '+s.belt+' · '+money(s.plan_cents):s.email,pill(s.active?'Ativo':'Inativo',s.active?'':'gray')+btn('Editar','user-edit',`${role}:${s.id}`)+(role==='student'?btn('Graduação','grade',s.id):'')+btn(s.active?'Desativar':'Reativar','active',`${role}:${s.id}`))).join('')||empty('Nenhum cadastro encontrado.')}
 function field(name,label,value='',type='text',extra=''){return `<label class="field" for="f-${name}">${esc(label)}</label><input id="f-${name}" name="${name}" type="${type}" value="${esc(value)}" ${extra}>`}
 function select(name,label,opts,v){return `<label class="field" for="f-${name}">${esc(label)}</label><select id="f-${name}" name="${name}" required>${opts.map(([key,text])=>`<option value="${esc(key)}" ${String(v)===String(key)?'selected':''}>${esc(text)}</option>`).join('')}</select>`}
 function area(name,label,value=''){return `<label class="field" for="f-${name}">${esc(label)}</label><textarea id="f-${name}" name="${name}" required maxlength="2000">${esc(value)}</textarea>`}
 function open(title,html,submit,label='Salvar'){$('modal-title').textContent=title;$('fields').innerHTML=html;$('form-error').textContent='';currentSubmit=submit;$('modal-form').querySelector('button[type=submit]').textContent=label;modal.showModal()}
 $('close').onclick=()=>modal.close();$('modal-form').onsubmit=async e=>{e.preventDefault();if(busy)return;busy=true;let b=e.target.querySelector('button[type=submit]');b.disabled=true;try{await currentSubmit(new FormData(e.target));modal.close()}catch(err){$('form-error').textContent=err.message}finally{busy=false;b.disabled=false}};
-async function handle(action,id){let u=S.user;switch(action){case 'nav':page=id;filter={};render();return;case 'refresh':await refresh();toast('Dados atualizados.');return;case 'logout':await api('logout',{});S=null;csrf='';loginView();return;case 'native-reload':await loadNativeStudents();return;
+async function handle(action,id){let u=S.user;switch(action){case 'nav':page=id;filter={};render();return;case 'refresh':await refresh();toast('Dados atualizados.');return;case 'logout':await api('logout',{});S=null;csrf='';loginView();return;case 'native-academy-reload':await loadNativeAcademy();return;
+case 'native-teacher-new':{
+  if(!S.native_students_lab||u.role!=='admin')throw Error('Laboratório indisponível.');
+  open('Professor fictício · Firestore',
+    '<p class="demo-note">Professor de teste sem senha ou acesso ao CT Pulse.</p>'+
+    field('name','Nome fictício','','text','required maxlength="150"')+
+    field('email','E-mail fictício','','email','required maxlength="254"'),
+    async f=>{
+      await api('native-academy/teacher/create',{name:f.get('name'),email:f.get('email')});
+      await loadNativeAcademy();toast('Professor fictício salvo no Firestore.');
+    },'Criar professor de teste');
+  return;
+}
+case 'native-class-new':{
+  if(!S.native_students_lab||u.role!=='admin')throw Error('Laboratório indisponível.');
+  const teachers=nativeAcademy.teachers.filter(x=>x.active);
+  if(!teachers.length)throw Error('Cadastre primeiro um professor no laboratório.');
+  open('Turma fictícia · Firestore',
+    '<p class="demo-note">Turma isolada: não modifica a grade principal.</p>'+
+    field('name','Nome da turma','','text','required maxlength="150"')+
+    select('teacher','Professor fictício',teachers.map(t=>[t.id,t.name]))+
+    field('time','Horário','18:00','time','required')+
+    field('capacity','Vagas',12,'number','required min="1" max="100" step="1"')+
+    nativeDaysInputs(),
+    async f=>{
+      await api('native-academy/class/create',{
+        name:f.get('name'),teacher_id:f.get('teacher'),
+        time:f.get('time'),capacity:Number(f.get('capacity')),
+        days:f.getAll('native_days').map(Number)});
+      await loadNativeAcademy();toast('Turma fictícia salva.');
+    },'Criar turma de teste');
+  return;
+}
+case 'native-class-edit':{
+  if(!S.native_students_lab||u.role!=='admin')throw Error('Laboratório indisponível.');
+  const course=nativeAcademy.classes.find(x=>x.id===id);
+  if(!course)throw Error('Turma fictícia não encontrada.');
+  open('Editar turma fictícia · Firestore',
+    field('name','Nome da turma',course.name,'text','required maxlength="150"')+
+    field('time','Horário',course.time,'time','required')+
+    field('capacity','Vagas',course.capacity,'number','required min="1" max="100" step="1"')+
+    nativeDaysInputs(course.days),
+    async f=>{
+      await api('native-academy/class/update',{
+        id:course.id,name:f.get('name'),time:f.get('time'),
+        capacity:Number(f.get('capacity')),days:f.getAll('native_days').map(Number)
+      });
+      await loadNativeAcademy();toast('Turma fictícia atualizada.');
+    });
+  return;
+}
+case 'native-class-enroll':{
+  if(!S.native_students_lab||u.role!=='admin')throw Error('Laboratório indisponível.');
+  const course=nativeAcademy.classes.find(x=>x.id===id);
+  if(!course)throw Error('Turma não encontrada.');
+  if(!nativeStudents.length)throw Error('Cadastre um aluno no laboratório Firestore antes de inscrever.');
+  const current=nativeAcademy.enrollments.filter(e=>e.class_id===course.id);
+  open('Inscrições fictícias · '+course.name,
+    '<p class="demo-note">Inscrições transacionais na turma de teste: '+course.enrolled_count+'/'+course.capacity+' vagas ocupadas. Sem agendamento ou cobrança.</p>'+
+    select('student','Aluno fictício',nativeStudents.map(s=>[s.id,s.name]))+
+    select('active','Ação',[[1,'Inscrever'],[0,'Cancelar inscrição']])+
+    '<p class="muted">Inscritos atualmente: '+(current.length?current.map(e=>esc(nativeStudents.find(s=>s.id===e.student_id)?.name||'Aluno')).join(', '):'nenhum')+'</p>',
+    async f=>{
+      await api('native-academy/enrollment',{
+        student_id:f.get('student'),class_id:course.id,active:Number(f.get('active'))});
+      await loadNativeAcademy();toast('Inscrição demonstrativa atualizada.');
+    },'Confirmar ação fictícia');
+  return;
+}
+case 'native-reload':await loadNativeStudents();return;
 case 'native-new':{
   if(!S.native_students_lab||u.role!=='admin')throw Error('Laboratório indisponível.');
   open('Novo aluno fictício · Firestore',
