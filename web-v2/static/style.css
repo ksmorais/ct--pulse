@@ -257,3 +257,42 @@ button.primary {
 .login-main form#register {
   padding-block: 1.25rem;
 }
+
+/* Ações dos comunicados e avisos financeiros */
+.notice-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: 1.1rem;
+  padding-top: .9rem;
+  border-top: 1px solid var(--line);
+}
+.notice-actions button[data-action="notice-delete"] {
+  color: #a32e2e;
+  border-color: #ebceca;
+  background: #fff8f6;
+}
+@media (hover: hover) {
+  .notice-actions button[data-action="notice-delete"]:not(:disabled):hover {
+    color: #8f2424;
+    border-color: #d99b94;
+    background: #fde8e4;
+  }
+}
+.demo-note {
+  border: 1px solid #ecd29d;
+  background: #fff8e9;
+  border-radius: 12px;
+  color: #69410e;
+  padding: .9rem 1rem;
+  line-height: 1.5;
+  font-size: .9rem;
+  margin: 0 0 1rem;
+}
+.notice-body {margin-top: .5rem;}
+@media (max-width: 720px) {
+  .notice-actions button {
+    flex: 1;
+  }
+}
