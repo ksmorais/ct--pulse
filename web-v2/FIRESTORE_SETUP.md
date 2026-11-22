@@ -53,7 +53,24 @@ Se a autenticação e permissão de leitura estiverem corretas, o primeiro coman
 
 Os testes unitários verificam apenas validação de configuração com credenciais artificiais. **Não comprovam persistência real**.
 
-## 4. Migração que ainda falta
+## 4. Comprovar persistência remota com um documento fictício
+
+Com as variáveis `FIREBASE_PROJECT_ID` e `GOOGLE_APPLICATION_CREDENTIALS` já configuradas em seu terminal PowerShell, execute na pasta `web-v2`:
+
+```powershell
+python firestore_persistence_check.py write
+```
+
+Guarde o ID hexadecimal de 24 caracteres mostrado na tela. Feche o terminal, abra outro e configure novamente as mesmas variáveis (o caminho da chave pode ser mantido em local privado). Então use:
+
+```powershell
+python firestore_persistence_check.py read ID_RETORNADO
+python firestore_persistence_check.py delete ID_RETORNADO
+```
+
+Troque `ID_RETORNADO` pelo identificador mostrado no comando de escrita. Esse teste comprova gravação/leitura remota entre processos; ele não converte cadastros SQLite, e a coleção `_ct_pulse_diagnostics` é temporária para diagnóstico. Depois de concluir, remova o documento fictício. Use somente dados de teste.
+
+## 5. Migração que ainda falta
 
 O arquivo `server.py` atual usa `sqlite3` e consultas SQL para autenticação, sessões, permissões, turmas, inscrições, agendamentos, presenças, mensalidades, graduação, avisos e métodos demonstrativos de pagamento.
 
