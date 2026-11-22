@@ -10,6 +10,7 @@ ROOT=Path(__file__).resolve().parent
 DB=Path(os.environ.get('CT_DB', ROOT/'data'/'ctpulse.sqlite3'))
 SECURE=os.environ.get('CT_SECURE_COOKIE','0')=='1'
 ALLOW_SIGNUP=os.environ.get('CT_ALLOW_SIGNUP','0')=='1'
+PAYMENTS_DEMO=os.environ.get('CT_PAYMENT_DEMO','0')=='1'
 BELTS=['Branca','Amarela','Laranja','Verde','Azul','Marrom','Preta']
 ROLES=['admin','teacher','student']
 class APIError(Exception):
@@ -132,8 +133,14 @@ def state(c,u):
         students=rows(c,"SELECT DISTINCT s.id,s.name,s.active,s.belt FROM users s JOIN enrollments e ON e.student_id=s.id JOIN classes cl ON cl.id=e.class_id WHERE cl.teacher_id=? ORDER BY s.name",(uid,)); classes=rows(c,clsql+'WHERE cl.teacher_id=? ORDER BY cl.name',(uid,)); teachers=[]; enroll=rows(c,'SELECT e.* FROM enrollments e JOIN classes cl ON cl.id=e.class_id WHERE cl.teacher_id=?',(uid,)); bookings=rows(c,'SELECT b.* FROM bookings b JOIN classes cl ON cl.id=b.class_id WHERE cl.teacher_id=?',(uid,)); attendance=rows(c,'SELECT a.* FROM attendance a JOIN classes cl ON cl.id=a.class_id WHERE cl.teacher_id=?',(uid,)); payments=[]; grades=rows(c,'SELECT g.* FROM grades g WHERE EXISTS(SELECT 1 FROM enrollments e JOIN classes cl ON cl.id=e.class_id WHERE e.student_id=g.student_id AND cl.teacher_id=?) ORDER BY g.id DESC',(uid,)); notices=rows(c,'SELECT n.*,u.name author FROM notices n JOIN users u ON u.id=n.author_id WHERE n.author_id=? ORDER BY n.id DESC',(uid,))
     else:
         students=[public(u)]; classes=rows(c,clsql+'WHERE cl.active=1 ORDER BY cl.name'); teachers=[]; enroll=rows(c,'SELECT * FROM enrollments WHERE student_id=?',(uid,)); bookings=rows(c,'SELECT * FROM bookings WHERE student_id=?',(uid,)); attendance=rows(c,'SELECT * FROM attendance WHERE student_id=?',(uid,)); payments=rows(c,'SELECT * FROM payments WHERE student_id=? ORDER BY month DESC',(uid,)); grades=rows(c,'SELECT * FROM grades WHERE student_id=? ORDER BY id DESC',(uid,)); notices=rows(c,'SELECT n.*,u.name author,i.read_at FROM inbox i JOIN notices n ON n.id=i.notice_id JOIN users u ON u.id=n.author_id WHERE i.student_id=? ORDER BY n.id DESC',(uid,))
+    if role=='admin':
+        payment_requests=rows(c,'SELECT pr.* FROM payment_requests pr')
+    elif role=='student':
+        payment_requests=rows(c,'SELECT pr.* FROM payment_requests pr JOIN payments p ON p.id=pr.payment_id WHERE p.student_id=?',(uid,))
+    else:
+        payment_requests=[]
     for cl in classes: cl['days']=json.loads(cl['days'])
-    return dict(user=public(u),csrf=u['csrf'],today=today(),students=students,classes=classes,teachers=teachers,enrollments=enroll,bookings=bookings,attendance=attendance,payments=payments,grades=grades,notices=notices)
+    return dict(user=public(u),csrf=u['csrf'],today=today(),students=students,classes=classes,teachers=teachers,enrollments=enroll,bookings=bookings,attendance=attendance,payments=payments,payment_requests=payment_requests,payments_demo=PAYMENTS_DEMO,grades=grades,notices=notices)
 
 def actions(c,u,path,d):
     role=u['role']; uid=u['id']; action=path.removeprefix('/api/')
@@ -197,6 +204,17 @@ def actions(c,u,path,d):
         allow(u,'admin'); month=string(d,'month',7); due=date_value(d,'due')
         if due[:7]!=month: fail('Vencimento deve pertencer ao mês de referência.')
         for s in rows(c,"SELECT id,plan_cents FROM users WHERE role='student' AND active=1"): make_payment(c,s['id'],month,s['plan_cents'],due)
+    elif action=='payment/request':
+        allow(u,'admin','student')
+        if not PAYMENTS_DEMO: fail('Geração de pagamento demonstrativo indisponível.',403)
+        pid=integer(d,'id'); method=d.get('method')
+        if method not in ('pix','boleto','card'): fail('Forma de pagamento inválida.')
+        payment=get(c,'SELECT * FROM payments WHERE id=?',(pid,))
+        if role=='student' and payment['student_id']!=uid:
+            fail('Mensalidade não encontrada.',404)
+        if payment['status']!='pending' or payment['amount_cents']<=0:
+            fail('Somente mensalidades pendentes com valor positivo permitem simulação.')
+        c.execute('INSERT INTO payment_requests(payment_id,method) VALUES(?,?) ON CONFLICT(payment_id) DO UPDATE SET method=excluded.method,created_at=CURRENT_TIMESTAMP',(pid,method))
     elif action=='payment/mark':
         allow(u,'admin'); pid=integer(d,'id'); status=d.get('status');
         if status not in ('paid','pending'): fail('Status inválido.')
@@ -212,6 +230,20 @@ def actions(c,u,path,d):
         else: fail('Selecione uma de suas turmas.')
         nid=c.execute('INSERT INTO notices(author_id,class_id,title,body) VALUES(?,?,?,?)',(uid,cid,title,body)).lastrowid
         c.executemany('INSERT INTO inbox(notice_id,student_id) VALUES(?,?)',[(nid,s['id']) for s in recipients])
+    elif action in ('notice/update','notice/delete'):
+        allow(u,'admin','teacher')
+        nid=integer(d,'id')
+        old=get(c,'SELECT id,author_id,class_id FROM notices WHERE id=?',(nid,))
+        if role=='teacher' and old['author_id']!=uid:
+            fail('Somente o autor ou administrador pode alterar este comunicado.',403)
+        if action=='notice/update':
+            title=string(d,'title')
+            body=string(d,'body',2000)
+            c.execute('UPDATE notices SET title=?,body=? WHERE id=?',(title,body,nid))
+        else:
+            # Remover os vínculos com a caixa de entrada evita erro de FK.
+            c.execute('DELETE FROM inbox WHERE notice_id=?',(nid,))
+            c.execute('DELETE FROM notices WHERE id=?',(nid,))
     elif action=='notice/read':
         allow(u,'student'); nid=integer(d,'id'); get(c,'SELECT notice_id FROM inbox WHERE notice_id=? AND student_id=?',(nid,uid)); c.execute('UPDATE inbox SET read_at=CURRENT_TIMESTAMP WHERE notice_id=? AND student_id=?',(nid,uid))
     else: fail('Rota não encontrada.',404)
