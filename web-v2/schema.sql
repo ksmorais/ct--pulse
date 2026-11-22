@@ -1,0 +1,15 @@
+PRAGMA foreign_keys=ON;
+CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','teacher','student')), active INTEGER NOT NULL DEFAULT 1 CHECK(active IN(0,1)), plan_cents INTEGER NOT NULL DEFAULT 0 CHECK(plan_cents>=0), belt TEXT NOT NULL DEFAULT 'Branca', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS classes(id INTEGER PRIMARY KEY, name TEXT NOT NULL, teacher_id INTEGER NOT NULL REFERENCES users(id), days TEXT NOT NULL, time TEXT NOT NULL, capacity INTEGER NOT NULL CHECK(capacity>0), active INTEGER NOT NULL DEFAULT 1 CHECK(active IN(0,1)));
+CREATE TABLE IF NOT EXISTS enrollments(student_id INTEGER NOT NULL REFERENCES users(id), class_id INTEGER NOT NULL REFERENCES classes(id), PRIMARY KEY(student_id,class_id));
+CREATE TABLE IF NOT EXISTS bookings(id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL REFERENCES users(id), class_id INTEGER NOT NULL REFERENCES classes(id), date TEXT NOT NULL, UNIQUE(student_id,class_id,date));
+CREATE TABLE IF NOT EXISTS attendance(student_id INTEGER NOT NULL REFERENCES users(id), class_id INTEGER NOT NULL REFERENCES classes(id), date TEXT NOT NULL, present INTEGER NOT NULL CHECK(present IN(0,1)), PRIMARY KEY(student_id,class_id,date));
+CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL REFERENCES users(id), month TEXT NOT NULL, amount_cents INTEGER NOT NULL CHECK(amount_cents>=0), due TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN('pending','paid')), paid_at TEXT, UNIQUE(student_id,month));
+CREATE TABLE IF NOT EXISTS grades(id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL REFERENCES users(id), author_id INTEGER NOT NULL REFERENCES users(id), belt TEXT NOT NULL, note TEXT NOT NULL, date TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS notices(id INTEGER PRIMARY KEY, author_id INTEGER NOT NULL REFERENCES users(id), class_id INTEGER REFERENCES classes(id), title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS inbox(notice_id INTEGER NOT NULL REFERENCES notices(id), student_id INTEGER NOT NULL REFERENCES users(id), read_at TEXT, PRIMARY KEY(notice_id,student_id));
+CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, csrf TEXT NOT NULL, expires INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS login_attempts(key TEXT PRIMARY KEY, attempts INTEGER NOT NULL, until INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_enroll_class ON enrollments(class_id);
+CREATE INDEX IF NOT EXISTS ix_booking_class_date ON bookings(class_id,date);
+CREATE INDEX IF NOT EXISTS ix_inbox_student ON inbox(student_id);
