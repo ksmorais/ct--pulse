@@ -2,6 +2,28 @@
 
 Esta configuração publica somente a pasta `web-v2/`, preservando a aplicação Expo da raiz.
 
+## Modo gratuito: demonstração acadêmica (sem persistência)
+
+O Render Free apaga arquivos locais após repouso, restart e novo deploy. **Nunca use dados reais ou o banco de produção nesta modalidade.**
+A demonstração é reiniciada com dados fictícios sempre que o serviço inicia. Não requer Persistent Disk nem Shell (indisponíveis no plano Free).
+
+1. Abra o Render Dashboard > **New > Web Service**, escolha o repositório `ksmorais/ct--pulse`.
+2. Até esta PR ser mesclada, selecione a branch `feat/ctpulse-render-deploy`.
+3. Selecione **Runtime Python**, **Root Directory: `web-v2`** e **Compute: Free ($0/mês)**.
+4. Build Command: `pip install -r requirements.txt`.
+5. Start Command: `bash start-demo.sh` (**diferente** do modo pago).
+6. Em Environment, configure:
+   - `CT_SECURE_COOKIE` = `1`
+   - `CT_DEMO_PASSWORD` = **uma senha exclusiva com no mínimo 12 caracteres**, criada por você diretamente no painel do Render (não a inclua no GitHub, no print nem no chat).
+7. Não configure `CT_DB` nem Persistent Disk; `start-demo.sh` usa um banco **descartável** em `/tmp/ctpulse-demo.sqlite3`.
+8. Clique para criar/deployar o serviço, confira os logs e abra sua URL HTTPS `*.onrender.com`.
+9. Entre com um destes e-mails fictícios e **a senha definida em `CT_DEMO_PASSWORD`**: `admin@ctpulse.com`, `prof@ctpulse.com` ou `aluno@ctpulse.com`. As credenciais padrão documentadas para **uso local** não funcionam na versão hospedada.
+10. Use apenas dados fictícios. Cadastros, alterações e pagamentos simulados podem ser vistos/modificados pelas pessoas com acesso, e **desaparecem** quando o serviço reiniciar.
+
+O script recusa iniciar se a senha não foi definida, se ela tiver menos de 12 caracteres ou se `CT_SECURE_COOKIE` não estiver habilitado. Não use `python server.py demo` com senha padrão para serviço público. Considere desabilitar o auto-deploy depois da demonstração para evitar reinicializações inesperadas, sabendo que o serviço Free poderá entrar em repouso mesmo assim.
+
+## Modo pago: banco SQLite persistente
+
 ## Antes de começar
 
 - A hospedagem deve ter disco persistente para o SQLite. No Render, esse recurso exige instância web paga; a modalidade gratuita **não** serve para persistência local do banco.
