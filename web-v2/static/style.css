@@ -164,3 +164,47 @@ button.primary {
     transform: none;
   }
 }
+
+/* CT PULSE SIDEBAR FIX — ACTIVE VS HOVER / FOOTER */
+/* Desktop: a navegação rola quando falta altura; a conta e o botão
+   Sair permanecem visíveis no rodapé da barra lateral. */
+@media (min-width: 721px) {
+  .sidebar {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .sidebar > .brand {
+    flex-shrink: 0;
+  }
+  .sidebar .nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #638d7c transparent;
+    padding-right: .15rem;
+  }
+  .sidebar .account {
+    flex-shrink: 0;
+    margin-top: 0;
+    background: var(--green);
+  }
+}
+/* Apenas a página ativa exibe a borda laranja lateral. */
+@media (hover: hover) {
+  .sidebar .nav button:not(.active):not(:disabled):hover {
+    background: #244e43;
+    color: #f5faf7;
+    box-shadow: none;
+    transform: none;
+  }
+}
+/* No celular, o destaque laranja continua exclusivo do item ativo. */
+@media (max-width: 720px) and (hover: hover) {
+  .nav button:not(.active):not(:disabled):hover {
+    background: #eef4ef;
+    color: var(--green);
+    box-shadow: none;
+  }
+}
