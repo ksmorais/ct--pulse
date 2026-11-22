@@ -149,7 +149,7 @@ def state(c,u):
     else:
         payment_requests=[]
     for cl in classes: cl['days']=json.loads(cl['days'])
-    return dict(user=public(u),csrf=u['csrf'],today=today(),students=students,classes=classes,teachers=teachers,enrollments=enroll,bookings=bookings,attendance=attendance,payments=payments,payment_requests=payment_requests,payments_demo=PAYMENTS_DEMO,grades=grades,notices=notices)
+    return dict(user=public(u),csrf=u['csrf'],today=today(),students=students,classes=classes,teachers=teachers,enrollments=enroll,bookings=bookings,attendance=attendance,payments=payments,payment_requests=payment_requests,payments_demo=PAYMENTS_DEMO,native_students_lab=(os.environ.get('CT_PERSISTENCE')=='firestore' and os.environ.get('CT_NATIVE_STUDENTS_LAB')=='1' and bool(re.fullmatch(r'[a-f0-9]{24}',os.environ.get('CT_NATIVE_STUDENT_WORKSPACE_ID','')))),grades=grades,notices=notices)
 
 def actions(c,u,path,d):
     role=u['role']; uid=u['id']; action=path.removeprefix('/api/')

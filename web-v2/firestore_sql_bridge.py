@@ -109,6 +109,9 @@ def firestore_wsgi_app(env, start_response, sqlite_app):
 
     try:
         client = get_firestore_client()
+        if env.get("PATH_INFO", "").startswith("/api/native-students"):
+            from native_student_api import handle_native_students
+            return handle_native_students(env, start_response, request_body, client)
         ref = client.collection(COLLECTION).document(DOCUMENT)
 
         @firestore.transactional

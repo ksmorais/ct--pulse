@@ -296,3 +296,24 @@ button.primary {
     flex: 1;
   }
 }
+
+/* Laboratório de alunos Firestore: distinto da lista principal e da produção. */
+.native-lab {
+  margin-top: 1.5rem;
+  border: 1px solid #e7bc75;
+  border-left: 4px solid var(--orange);
+  background: #fffdf8;
+}
+.native-lab h2 { margin-bottom: .35rem; }
+.native-lab .top { align-items: center; gap: 1rem; }
+.native-lab #native-students-results { margin-top: .9rem; }
+.native-lab .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.native-lab .list-row {
+  padding: .85rem 0;
+  border-bottom: 1px solid #f0e4d2;
+}
+.native-lab .list-row:last-child { border-bottom: 0; }
+@media (max-width: 720px) {
+  .native-lab .top { flex-wrap: wrap; }
+  .native-lab .actions { width: 100%; }
+}
