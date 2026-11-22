@@ -82,8 +82,8 @@ def seed_demo():
     with connection() as c:
         c.execute('BEGIN IMMEDIATE')
         if c.execute('SELECT 1 FROM users LIMIT 1').fetchone(): fail('O banco não está vazio. Use outro arquivo CT_DB.')
-        a=create_user(c,'Administração','admin@ctpulse.com','DemoAdmin2026!','admin'); t=create_user(c,'Prof. Diego','prof@ctpulse.com','DemoProfessor2026!','teacher'); s=create_user(c,'Marina Costa','aluno@ctpulse.com','DemoAluno2026!','student',15900)
-        s2=create_user(c,'João Martins','joao@ctpulse.com','DemoJoao2026!','student',17900)
+        a=create_user(c,'Administração','admin@ctpulse.com',(os.environ.get('CT_DEMO_PASSWORD') or 'DemoAdmin2026!'),'admin'); t=create_user(c,'Prof. Diego','prof@ctpulse.com',(os.environ.get('CT_DEMO_PASSWORD') or 'DemoProfessor2026!'),'teacher'); s=create_user(c,'Marina Costa','aluno@ctpulse.com',(os.environ.get('CT_DEMO_PASSWORD') or 'DemoAluno2026!'),'student',15900)
+        s2=create_user(c,'João Martins','joao@ctpulse.com',(os.environ.get('CT_DEMO_PASSWORD') or 'DemoJoao2026!'),'student',17900)
         cid=c.execute('INSERT INTO classes(name,teacher_id,days,time,capacity) VALUES(?,?,?,?,?)',('Muay Thai • Iniciante',t,'[1,3,5]','18:00',16)).lastrowid
         c.execute('INSERT INTO classes(name,teacher_id,days,time,capacity) VALUES(?,?,?,?,?)',('Jiu-jitsu • Fundamentos',t,'[2,4]','19:00',12))
         c.execute('INSERT INTO enrollments VALUES(?,?)',(s,cid)); c.execute('INSERT INTO enrollments VALUES(?,?)',(s2,cid))
