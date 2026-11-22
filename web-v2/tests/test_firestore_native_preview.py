@@ -39,6 +39,7 @@ def snapshot(fake_broken_fk=False):
     conn.execute("INSERT INTO sessions(token_hash,user_id,csrf,expires) VALUES(?,?,?,?)",
                  ("token-secreto", 1, "csrf-secreto", 5000000000))
     if fake_broken_fk:
+        conn.commit()
         conn.execute("PRAGMA foreign_keys=OFF")
         conn.execute("INSERT INTO enrollments(student_id,class_id) VALUES(?,?)", (999, 7))
     dump = "\n".join(conn.iterdump()).encode("utf-8")
@@ -146,7 +147,6 @@ class NativePreviewTests(unittest.TestCase):
     def test_incomplete_export_not_marked_complete(self):
         client = FakeClient()
         docs = exporter.snapshot_to_documents(snapshot())
-        base = client.batch
         def fail_on_commit():
             class FailingBatch(FakeBatch):
                 def commit(self):
