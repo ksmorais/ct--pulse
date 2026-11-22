@@ -1,0 +1,57 @@
+# Publicar o CT Pulse V2 no Render (SQLite persistente)
+
+Esta configuração publica somente a pasta `web-v2/`, preservando a aplicação Expo da raiz.
+
+## Antes de começar
+
+- A hospedagem deve ter disco persistente para o SQLite. No Render, esse recurso exige instância web paga; a modalidade gratuita **não** serve para persistência local do banco.
+- Configure HTTPS, backups e revise segurança/LGPD antes de cadastrar pessoas reais.
+- O banco local `data/ctpulse.sqlite3` e as contas de demonstração **não** devem ser enviados ao servidor público.
+- O servidor WSGI de produção é o Gunicorn (Linux); `server.py serve` é para desenvolvimento.
+
+## Configuração manual no Render
+
+1. Acesse https://dashboard.render.com e selecione **New > Web Service**.
+2. Conecte o repositório `ksmorais/ct--pulse`; selecione a branch `main` depois que esta alteração estiver mesclada.
+3. Configure:
+   - **Runtime**: Python
+   - **Root Directory**: `web-v2`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `bash start.sh`
+   - **Instância**: uma opção **paga** que permita disco persistente
+4. Adicione um **Persistent Disk**, com mount path `/var/data` (tamanho conforme necessidade, por exemplo 1 GB).
+5. Defina as variáveis de ambiente:
+   - `CT_DB=/var/data/ctpulse.sqlite3`
+   - `CT_SECURE_COOKIE=1`
+6. Confira os custos no resumo da plataforma **antes** de confirmar a criação do serviço.
+7. Após o deploy, abra a **Shell** do serviço em execução e crie o primeiro administrador:
+   ```bash
+   python server.py admin --email seu-email@exemplo.com --name "Administrador CT Pulse"
+   ```
+   O comando solicitará uma senha **nova, exclusiva e de no mínimo 12 caracteres**. Não escreva a senha em comentários, comandos ou repositório. Execute apenas uma vez para cada administrador.
+8. Abra a URL HTTPS do serviço (geralmente termina em `.onrender.com`) e faça login.
+9. Teste pelo computador e pelo celular, ambos com contas **fictícias**, e reinicie o serviço para verificar persistência.
+
+## Conferência e operação
+
+- Verifique o arquivo `/var/data/ctpulse.sqlite3` e suas permissões na instância.
+- Nunca execute `python server.py demo` no ambiente público.
+- Antes do uso real, configure backups **consistentes** do SQLite e teste restauração. Os arquivos `-wal` e `-shm` podem existir enquanto o banco opera.
+- A aplicação com SQLite em um disco deve permanecer em **uma instância**. Para escalar horizontalmente, planeje migração para PostgreSQL e adapte a camada de acesso.
+- Não rode duas réplicas apontando para bancos independentes.
+- O primeiro deploy pode exibir a tela de login antes de haver administrador; conclua a criação pelo Shell.
+- A versão Expo permanece independente da API; o deploy web não altera ou sincroniza automaticamente o aplicativo nativo.
+
+## Problemas frequentes
+
+- **Erro de configuração ao iniciar**: confira `CT_DB` e `CT_SECURE_COOKIE` em Environment.
+- **Application failed to respond**: confira `bash start.sh`, logs de deploy e variável `PORT` fornecida pelo Render.
+- **Login 401**: antes do login é esperado; depois, confira se o administrador foi criado no banco montado.
+- **Dados somem após restart**: confira se `CT_DB` aponta para o diretório do Persistent Disk; não use disco efêmero.
+
+## Referências
+
+- https://render.com/docs/web-services
+- https://render.com/docs/disks
+- https://render.com/docs/ssh
+- https://render.com/docs/monorepo-support
