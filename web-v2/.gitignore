@@ -7,3 +7,9 @@ __pycache__/
 *.pyc
 .env
 .venv/
+
+# Chaves privadas Firebase/Google Cloud (nunca versionar)
+*firebase-adminsdk*.json
+*service-account*.json
+*serviceAccount*.json
+firebase-service-account.json
