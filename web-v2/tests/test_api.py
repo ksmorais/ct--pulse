@@ -35,6 +35,34 @@ class TestCT(unittest.TestCase):
         # separate connection and fresh session prove persistent, shared database
         new2=Client();new2.login('teste@ctpulse.com','SenhaNova2026!');self.assertEqual(new2.req('state')['payments'][0]['status'],'paid');
         a.req('user/active',{'id':nid,'active':0});new.req('state',expected=401);new2.req('state',expected=401)
+    def test_student_self_registration(self):
+        c=Client(); old=server.ALLOW_SIGNUP
+        account={'name':'Aluno Exemplo','email':'novato@ctpulse.com','password':'SenhaAluno1234!'}
+        try:
+            server.ALLOW_SIGNUP=False
+            self.assertFalse(c.req('public-config')['signup_enabled'])
+            c.req('register',account,403)
+            server.ALLOW_SIGNUP=True
+            self.assertTrue(c.req('public-config')['signup_enabled'])
+            c.req('register',{**account,'password':'curta'},400)
+            c.req('register',{**account,'role':'admin'},400)
+            c.req('register',{**account,'email':'email-invalido'},400)
+            self.assertTrue(c.req('register',account)['ok'])
+            c.req('register',account,409)
+            c.login(account['email'],account['password'])
+            state=c.req('state')
+            self.assertEqual(state['user']['role'],'student')
+            self.assertEqual(state['user']['plan_cents'],0)
+            self.assertFalse(state['payments'])
+            with server.connection() as db:
+                stored=db.execute('SELECT password_hash FROM users WHERE email=?',(account['email'],)).fetchone()[0]
+                self.assertNotEqual(stored,account['password'])
+            c.req('user/save',{'name':'Admin Novo','email':'admnovo@ctpulse.com','password':'Teste12345678','role':'teacher'},403)
+            cid=state['classes'][0]['id']
+            c.req('enrollment',{'class_id':cid,'active':1})
+            self.assertTrue(any(e['class_id']==cid for e in c.req('state')['enrollments']))
+        finally:
+            server.ALLOW_SIGNUP=old
     def test_auth_and_validation(self):
         c=Client();c.req('state',expected=401);c.req('login',{'email':'admin@ctpulse.com','password':'bad'},401);c.login('admin@ctpulse.com','DemoAdmin2026!');c.req('user/save',{'role':'admin','name':'X','email':'x@x.com','password':'Password1234'},400);c.req('logout',{});c.req('state',expected=401)
 if __name__=='__main__':unittest.main()
