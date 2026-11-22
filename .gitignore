@@ -4,3 +4,25 @@ dist/
 web-build/
 .DS_Store
 *.log
+
+# Dependências
+node_modules/
+
+# Compilação
+dist/
+build/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Banco de dados SQLite gerado localmente
+*.db
+*.sqlite
+*.sqlite3
+
+# Arquivos temporários
+*.log
+__pycache__/
+.venv/
