@@ -31,7 +31,8 @@ ROUTES = {
 
 def lab_enabled():
     workspace = os.environ.get("CT_NATIVE_STUDENT_WORKSPACE_ID", "")
-    return (os.environ.get("CT_NATIVE_STUDENTS_LAB", "0") == "1"
+    return (os.environ.get("CT_PERSISTENCE") == "firestore"
+            and os.environ.get("CT_NATIVE_STUDENTS_LAB", "0") == "1"
             and bool(WORKSPACE_PATTERN.fullmatch(workspace)))
 
 
