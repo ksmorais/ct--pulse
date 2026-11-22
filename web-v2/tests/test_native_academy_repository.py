@@ -105,10 +105,10 @@ class AcademyRepositoryTests(unittest.TestCase):
     def test_capacity_cannot_be_less_than_enrollment(self):
         self.repo.update_class(self.course,capacity=2)
         self.repo.set_enrollment(student_id=self.student1,class_id=self.course,active=1)
+        self.repo.set_enrollment(student_id=self.student2,class_id=self.course,active=1)
         with self.assertRaises(NoVacancy):
-            self.repo.update_class(self.course,capacity=0)
-        self.repo.update_class(self.course,capacity=1)
-        self.assertEqual(self.repo.list_classes()[0]["capacity"],1)
+            self.repo.update_class(self.course,capacity=1)
+        self.assertEqual(self.repo.list_classes()[0]["capacity"],2)
 
     def test_invalid_class_inputs(self):
         for kwargs in [
