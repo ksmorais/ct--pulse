@@ -63,6 +63,60 @@ class TestCT(unittest.TestCase):
             self.assertTrue(any(e['class_id']==cid for e in c.req('state')['enrollments']))
         finally:
             server.ALLOW_SIGNUP=old
+    def test_notice_edit_delete_authorization(self):
+        admin=Client(); teacher=Client(); pupil=Client()
+        admin.login('admin@ctpulse.com','DemoAdmin2026!')
+        teacher.login('prof@ctpulse.com','DemoProfessor2026!')
+        pupil.login('aluno@ctpulse.com','DemoAluno2026!')
+        cid=pupil.req('state')['enrollments'][0]['class_id']
+        initial=admin.req('state')['notices']
+        existing=initial[0]
+        teacher.req('notice/update',{'id':existing['id'],'title':'Tentativa','body':'X'},403)
+        pupil.req('notice/delete',{'id':existing['id']},403)
+        teacher.req('notice',{'class_id':cid,'title':'Aviso de teste','body':'Lembrete de aula'})
+        own=next(x for x in teacher.req('state')['notices'] if x['title']=='Aviso de teste')
+        teacher.req('notice/update',{'id':own['id'],'title':'Novo horário','body':'Aula às 19h'})
+        self.assertTrue(any(n['title']=='Novo horário' for n in pupil.req('state')['notices']))
+        pupil.req('notice/update',{'id':own['id'],'title':'X','body':'X'},403)
+        admin.req('notice/update',{'id':own['id'],'title':'Atualizado pelo admin','body':'Aviso corrigido'})
+        self.assertTrue(any(n['title']=='Atualizado pelo admin' for n in pupil.req('state')['notices']))
+        teacher.req('notice/delete',{'id':own['id']})
+        self.assertFalse(any(n['id']==own['id'] for n in pupil.req('state')['notices']))
+        with server.connection() as db:
+            count=db.execute('SELECT count(*) FROM inbox WHERE notice_id=?',(own['id'],)).fetchone()[0]
+            self.assertEqual(count,0)
+        admin.req('notice/delete',{'id':existing['id']})
+        self.assertFalse(any(n['id']==existing['id'] for n in admin.req('state')['notices']))
+
+    def test_payment_method_demo_permissions(self):
+        admin=Client(); teacher=Client(); pupil=Client(); other=Client()
+        admin.login('admin@ctpulse.com','DemoAdmin2026!')
+        teacher.login('prof@ctpulse.com','DemoProfessor2026!')
+        pupil.login('aluno@ctpulse.com','DemoAluno2026!')
+        other.login('joao@ctpulse.com','DemoJoao2026!')
+        pid=pupil.req('state')['payments'][0]['id']
+        foreign=other.req('state')['payments'][0]['id']
+        old=server.PAYMENTS_DEMO
+        try:
+            server.PAYMENTS_DEMO=False
+            pupil.req('payment/request',{'id':pid,'method':'pix'},403)
+            server.PAYMENTS_DEMO=True
+            teacher.req('payment/request',{'id':pid,'method':'pix'},403)
+            pupil.req('payment/request',{'id':foreign,'method':'pix'},404)
+            pupil.req('payment/request',{'id':pid,'method':'invalid'},400)
+            pupil.req('payment/request',{'id':pid,'method':'pix'})
+            self.assertEqual(pupil.req('state')['payment_requests'][0]['method'],'pix')
+            pupil.req('payment/request',{'id':pid,'method':'boleto'})
+            self.assertEqual(pupil.req('state')['payment_requests'][0]['method'],'boleto')
+            admin.req('payment/request',{'id':foreign,'method':'card'})
+            self.assertEqual(other.req('state')['payment_requests'][0]['method'],'card')
+            self.assertEqual(len(pupil.req('state')['payment_requests']),1)
+            admin.req('payment/mark',{'id':pid,'status':'paid'})
+            pupil.req('payment/request',{'id':pid,'method':'pix'},400)
+            self.assertEqual(pupil.req('state')['payments'][0]['status'],'paid')
+            admin.req('payment/mark',{'id':pid,'status':'pending'})
+        finally:
+            server.PAYMENTS_DEMO=old
     def test_auth_and_validation(self):
         c=Client();c.req('state',expected=401);c.req('login',{'email':'admin@ctpulse.com','password':'bad'},401);c.login('admin@ctpulse.com','DemoAdmin2026!');c.req('user/save',{'role':'admin','name':'X','email':'x@x.com','password':'Password1234'},400);c.req('logout',{});c.req('state',expected=401)
 if __name__=='__main__':unittest.main()
