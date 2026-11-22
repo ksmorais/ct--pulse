@@ -91,15 +91,15 @@ def handle_native_students(env, start_response, raw_body, client):
     try:
         if method == "POST":
             if env.get("CONTENT_TYPE", "").split(";")[0] != "application/json":
-                raise server.APIError("Envie JSON.", 400)
+                raise server.APIError(400, "Envie JSON.")
             if not 0 < len(raw_body) <= 65536:
-                raise server.APIError("Conteúdo inválido.", 400)
+                raise server.APIError(400, "Conteúdo inválido.")
             try:
                 data = json.loads(raw_body)
             except (ValueError, UnicodeError):
-                raise server.APIError("JSON inválido.", 400)
+                raise server.APIError(400, "JSON inválido.")
             if not isinstance(data, dict):
-                raise server.APIError("JSON inválido.", 400)
+                raise server.APIError(400, "JSON inválido.")
         _authenticate_admin(client, env)
         repo = NativeStudentRepository(
             client, os.environ["CT_NATIVE_STUDENT_WORKSPACE_ID"]
@@ -113,7 +113,7 @@ def handle_native_students(env, start_response, raw_body, client):
             })
         if path == "/api/native-students/create":
             if set(data) not in ({"name", "email"}, {"name", "email", "plan_cents"}):
-                raise server.APIError("Informe apenas nome, e-mail e plano demonstrativo.", 400)
+                raise server.APIError(400, "Informe apenas nome, e-mail e plano demonstrativo.")
             new_id = repo.create_student(
                 name=data["name"], email=data["email"],
                 plan_cents=data.get("plan_cents", 0)
@@ -124,7 +124,7 @@ def handle_native_students(env, start_response, raw_body, client):
             })
         if path == "/api/native-students/update":
             if "id" not in data:
-                raise server.APIError("Informe o ID do aluno.", 400)
+                raise server.APIError(400, "Informe o ID do aluno.")
             changes = {k: v for k, v in data.items() if k != "id"}
             student_id = repo.update_student(data["id"], **changes)
             return _json_response(start_response, 200, {"ok": True, "id": student_id})
