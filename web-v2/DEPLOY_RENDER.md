@@ -34,6 +34,20 @@ Na hospedagem demonstrativa, `start-demo.sh` define `CT_ALLOW_SIGNUP=1` automati
 
 O script recusa iniciar se a senha não foi definida, se ela tiver menos de 12 caracteres ou se `CT_SECURE_COOKIE` não estiver habilitado. Não use `python server.py demo` com senha padrão para serviço público. Considere desabilitar o auto-deploy depois da demonstração para evitar reinicializações inesperadas, sabendo que o serviço Free poderá entrar em repouso mesmo assim.
 
+## Avisos e Financeiro na demonstração
+
+- **Avisos:** administradores podem editar ou excluir qualquer comunicado; professores só podem modificar os próprios. A edição altera **título e mensagem** sem mudar os destinatários originais. A exclusão remove o aviso e as entradas vinculadas na caixa de entrada.
+- **Financeiro:** administradores e alunos podem selecionar **Pix (simulado)**, **Boleto (simulado)** ou **Cartão (simulado)** em mensalidades **pendentes e com valor positivo**. A escolha fica salva temporariamente no SQLite, mas **não gera QR Code Pix, linha digitável, boleto bancário, cobrança de cartão nem transação financeira**.
+- O script `start-demo.sh` habilita `CT_PAYMENT_DEMO=1` apenas no ambiente de demonstração. Em outros ambientes, o comportamento padrão é manter o recurso desabilitado.
+- A confirmação manual de mensalidades pelo administrador continua sendo um registro administrativo e **não equivale a pagamento verificado**.
+- Os dados e as escolhas desaparecem quando o Render gratuito apaga o banco temporário. Use exclusivamente nomes, e-mails e valores **fictícios**.
+
+### Para pagamentos de verdade
+
+É necessário integrar uma conta autorizada em um provedor de pagamentos (como o Asaas), com identificação do recebedor e do pagador, credenciais armazenadas apenas no servidor, HTTPS, confirmação de cobrança via API e validação de Webhooks. Para cobranças Asaas, o cadastro do cliente exige CPF/CNPJ, que a aplicação CT Pulse atual não solicita. Não coloque números de cartão, CPF/CNPJ ou chaves de API no frontend, no código-fonte ou nos comentários da PR. A versão gratuita/efêmera **não deve ser utilizada para cobranças reais**.
+
+Documentação técnica: https://docs.asaas.com/docs/guia-de-cobrancas e https://docs.asaas.com/docs/receba-eventos-do-asaas-no-seu-endpoint-de-webhook
+
 ## Modo pago: banco SQLite persistente
 
 ## Antes de começar
